@@ -108,8 +108,16 @@ Winners must upload a screenshot of their scores from the golf platform for Admi
 ---
 
 ## 06 MANDATORY NOTES
-*   **Payment Gateway:** Currently utilizing **Razorpay Test Mode**. All subscription flows are fully simulated for selection process evaluation. Architecture is "Production-Ready" and can be transitioned by updating API keys.
-*   **Mobile-First:** The UI is fully responsive and optimized for mobile devices as per PRD Section 13.
+
+- **Payment Gateway:** Currently utilizing **Razorpay Test Mode**. All subscription flows are fully simulated for evaluation. The architecture is **production-ready** and can be transitioned by updating API keys.
+
+- **UPI Test Payments:** Use **UPI mode** during checkout with the test UPI ID:  
+  `success@razorpay`  
+  This simulates successful transactions in test mode.
+
+- **Production Upgrade:** Razorpay **Live Keys** and **Webhook integration** will be configured during production deployment as required.
+
+- **Mobile-First:** The UI is fully responsive and optimized for mobile devices as per PRD Section 13.
 
 ---
 
