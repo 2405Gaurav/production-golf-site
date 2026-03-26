@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
@@ -15,43 +16,25 @@ function verifySignature(orderId: string, paymentId: string, signature: string):
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const token = cookieStore.get('auth-token')?.value;
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const payload = await verifyToken(token);
-    if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-
+    const payload: any = await verifyToken(token);
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan } = await request.json();
 
-    // Verify the payment signature — this is the security check
-    const isValid = verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
-    if (!isValid) {
+    if (!verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
       return NextResponse.json({ error: 'Payment verification failed' }, { status: 400 });
     }
 
-    // Activate subscription in DB
     const subscription = await prisma.subscription.upsert({
       where: { userId: payload.userId },
-    update: {
-  plan,
-  status: 'active',
-  startDate: new Date(),
-  razorpayPaymentId,
-  razorpayOrderId,
-},
-create: {
-  userId: payload.userId,
-  plan,
-  status: 'active',
-  razorpayPaymentId,
-  razorpayOrderId,
-},
+      update: { plan, status: 'active', startDate: new Date(), razorpayPaymentId, razorpayOrderId },
+      create: { userId: payload.userId, plan, status: 'active', razorpayPaymentId, razorpayOrderId },
     });
 
     return NextResponse.json({ success: true, subscription });
   } catch (error) {
-    console.error('Verify payment error:', error);
     return NextResponse.json({ error: 'Payment verification failed' }, { status: 500 });
   }
 }

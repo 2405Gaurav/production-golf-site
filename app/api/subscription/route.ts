@@ -1,10 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 async function requireUser() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies(); // Sync in 13.5.1
   const token = cookieStore.get('auth-token')?.value;
   if (!token) return null;
   return verifyToken(token);
@@ -12,7 +14,7 @@ async function requireUser() {
 
 export async function GET() {
   try {
-    const payload = await requireUser();
+    const payload: any = await requireUser();
     if (!payload) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const subscription = await prisma.subscription.findUnique({
@@ -20,14 +22,14 @@ export async function GET() {
     });
 
     return NextResponse.json({ subscription });
-  } catch {
+  } catch (error: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const payload = await requireUser();
+    const payload: any = await requireUser();
     if (!payload) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { plan } = await request.json();
@@ -42,14 +44,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ subscription });
-  } catch {
+  } catch (error: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function DELETE() {
   try {
-    const payload = await requireUser();
+    const payload: any = await requireUser();
     if (!payload) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const existing = await prisma.subscription.findUnique({
@@ -65,7 +67,7 @@ export async function DELETE() {
     });
 
     return NextResponse.json({ subscription });
-  } catch {
+  } catch (error: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
@@ -11,12 +13,12 @@ const proofSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const payload = await verifyToken(token);
+    const payload: any = await verifyToken(token);
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     const body = await request.json();
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ proof });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Proof upload error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

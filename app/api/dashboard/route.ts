@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
@@ -5,12 +6,11 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const token = cookieStore.get('auth-token')?.value;
-
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const payload = await verifyToken(token);
+    const payload: any = await verifyToken(token);
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     const [subscription, scores, userCharity, winners, latestDraw] = await Promise.all([
@@ -25,14 +25,8 @@ export async function GET() {
         include: { charity: true },
       }),
       prisma.winner.findMany({
-        where: {
-          userId: payload.userId,
-          draw: { status: 'completed' },
-        },
-        include: {
-          draw: true,
-          proof: true,
-        },
+        where: { userId: payload.userId, draw: { status: 'completed' } },
+        include: { draw: true, proof: true },
         orderBy: { id: 'desc' },
       }),
       prisma.draw.findFirst({
@@ -41,12 +35,9 @@ export async function GET() {
       }),
     ]);
 
-    // Attach charity deduction breakdown to each winner
     const charityPercentage = userCharity?.percentage ?? 0;
-    const winnersWithBreakdown = winners.map((winner) => {
-      const charityDeduction = parseFloat(
-        ((winner.amount * charityPercentage) / 100).toFixed(2)
-      );
+    const winnersWithBreakdown = winners.map((winner: any) => {
+      const charityDeduction = parseFloat(((winner.amount * charityPercentage) / 100).toFixed(2));
       const netAmount = parseFloat((winner.amount - charityDeduction).toFixed(2));
       return {
         ...winner,
@@ -58,26 +49,15 @@ export async function GET() {
       };
     });
 
-    // Total winnings = sum of net amounts (after charity deduction)
-    const totalGross = winners.reduce((sum, w) => sum + w.amount, 0);
-    const totalCharityDeduction = parseFloat(
-      ((totalGross * charityPercentage) / 100).toFixed(2)
-    );
+    const totalGross = winners.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+    const totalCharityDeduction = parseFloat(((totalGross * charityPercentage) / 100).toFixed(2));
     const totalWinnings = parseFloat((totalGross - totalCharityDeduction).toFixed(2));
 
     return NextResponse.json({
-      subscription,
-      scores,
-      userCharity,
-      totalWinnings,
-      totalGross,
-      totalCharityDeduction,
-      charityPercentage,
-      latestDraw,
-      winners: winnersWithBreakdown,
+      subscription, scores, userCharity, totalWinnings, totalGross,
+      totalCharityDeduction, charityPercentage, latestDraw, winners: winnersWithBreakdown,
     });
   } catch (error) {
-    console.error('Dashboard error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
