@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("user") // user or admin
+  createdAt    DateTime @default(now())
+
+  subscription Subscription?
+  scores       Score[]
+  userCharity  UserCharity?
+  entries      Entry[]
+  winners      Winner[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  plan      String   // monthly or yearly
+  status    String   @default("active") // active or inactive
+  startDate DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Score {
+  id     String   @id @default(cuid())
+  userId String
+  value  Int      // 1-45
+  date   DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("scores")
+}
+
+model Charity {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  createdAt   DateTime @default(now())
+
+  userCharities UserCharity[]
+
+  @@map("charities")
+}
+
+model UserCharity {
+  id         String @id @default(cuid())
+  userId     String @unique
+  charityId  String
+  percentage Int    // minimum 10%
+  
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  charity Charity @relation(fields: [charityId], references: [id], onDelete: Cascade)
+
+  @@map("user_charities")
+}
+
+model Draw {
+  id             String   @id @default(cuid())
+  month          String   // e.g., "2024-01"
+  numbers        String   // JSON array of 5 numbers
+  rolloverAmount Float    @default(0)
+  status         String   @default("draft") // active, completed
+  date           DateTime @default(now())
+
+  entries Entry[]
+  winners Winner[]
+
+  @@map("draws")
+}
+
+model Entry {
+  id             String @id @default(cuid())
+  userId         String
+  drawId         String
+  scoresSnapshot String // JSON array of user's 5 scores at time of draw
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, drawId])
+  @@map("entries")
+}
+
+model Winner {
+  id        String @id @default(cuid())
+  userId    String
+  drawId    String
+  matchType String // tier1, tier2, tier3
+  amount    Float
+  status    String @default("pending") // pending, paid
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draw  Draw  @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  proof Proof?
+
+  @@map("winners")
+}
+
+model Proof {
+  id       String @id @default(cuid())
+  winnerId String @unique
+  fileUrl  String
+  status   String @default("pending") // pending, approved, rejected
+  
+  winner Winner @relation(fields: [winnerId], references: [id], onDelete: Cascade)
+
+  @@map("proofs")
+}
