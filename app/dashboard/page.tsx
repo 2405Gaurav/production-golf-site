@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import SubscriptionCard from '@/components/dashboard/SubscriptionCard';
+import ScoresCard from '@/components/dashboard/Scorescard';
+import CharityCard from '@/components/dashboard/Charitycard';
+import WinningsCard from '@/components/dashboard/Winningscard';
+import LatestDrawCard from '@/components/dashboard/Latestdrawcard';
 
 interface WinnerWithBreakdown {
   id: string;
@@ -39,20 +38,13 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [charities, setCharities] = useState([]);
-  const [newScore, setNewScore] = useState('');
-  const [selectedCharity, setSelectedCharity] = useState('');
-  const [percentage, setPercentage] = useState(10);
   const [loading, setLoading] = useState(true);
+  const [subscribing, setSubscribing] = useState(false);
   const router = useRouter();
-  const [editingScore, setEditingScore] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
 
-  useEffect(() => {
-    fetchDashboardData();
-    fetchCharities();
-  }, []);
+  const isSubscribed = data?.subscription?.status === 'active';
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetch('/api/dashboard');
       if (response.ok) {
@@ -66,30 +58,9 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const handleScoreEdit = async (scoreId: string) => {
-    if (!editValue) return;
-    try {
-      const response = await fetch('/api/scores', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scoreId, value: parseInt(editValue) }),
-      });
-      if (response.ok) {
-        setEditingScore(null);
-        setEditValue('');
-        fetchDashboardData();
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Error editing score:', error);
-    }
-  };
-
-  const fetchCharities = async () => {
+  const fetchCharities = useCallback(async () => {
     try {
       const response = await fetch('/api/charities');
       if (response.ok) {
@@ -99,45 +70,15 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching charities:', error);
     }
-  };
+  }, []);
 
-  const handleScoreSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: parseInt(newScore) }),
-      });
-      if (response.ok) {
-        setNewScore('');
-        fetchDashboardData();
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Error submitting score:', error);
-    }
-  };
+  useEffect(() => {
+    fetchDashboardData();
+    fetchCharities();
+  }, [fetchDashboardData, fetchCharities]);
 
-  const handleCharitySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/user/charity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ charityId: selectedCharity, percentage }),
-      });
-      if (response.ok) {
-        fetchDashboardData();
-      }
-    } catch (error) {
-      console.error('Error updating charity:', error);
-    }
-  };
-
-  const handleSubscriptionUpdate = async (plan: string) => {
+  const handleSubscribe = async (plan: 'monthly' | 'yearly') => {
+    setSubscribing(true);
     try {
       const response = await fetch('/api/subscription', {
         method: 'POST',
@@ -145,10 +86,24 @@ export default function DashboardPage() {
         body: JSON.stringify({ plan }),
       });
       if (response.ok) {
-        fetchDashboardData();
+        await fetchDashboardData();
       }
     } catch (error) {
-      console.error('Error updating subscription:', error);
+      console.error('Error subscribing:', error);
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription?')) return;
+    try {
+      const response = await fetch('/api/subscription', { method: 'DELETE' });
+      if (response.ok) {
+        await fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Error cancelling:', error);
     }
   };
 
@@ -162,6 +117,10 @@ export default function DashboardPage() {
     }
   };
 
+  const scrollToSubscribe = () => {
+    document.getElementById('subscription-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -173,289 +132,134 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-green-800">⛳ Dashboard</h1>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
+            <div className="flex items-center gap-3">
+              {!isSubscribed && (
+                <Button
+                  size="sm"
+                  className="bg-green-700 hover:bg-green-800 text-white"
+                  onClick={scrollToSubscribe}
+                >
+                  🔓 Subscribe to unlock features
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Subscription Status */}
-       <div className="mb-8">
-  <SubscriptionCard
-    subscription={data?.subscription ?? null}
-    onUpdate={fetchDashboardData}
-  />
-</div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="space-y-8">
-            {/* Scores */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Golf Scores</CardTitle>
-                <CardDescription>Submit your latest scores (1-45). Only your best 5 scores are kept.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleScoreSubmit} className="mb-4">
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min="1"
-                      max="45"
-                      value={newScore}
-                      onChange={(e) => setNewScore(e.target.value)}
-                      placeholder="Enter score (1-45)"
-                      required
-                    />
-                    <Button type="submit">Add Score</Button>
-                  </div>
-                </form>
-
-                <div className="space-y-2">
-                  {data?.scores?.map((score) => (
-                    <div key={score.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      {editingScore === score.id ? (
-                        <div className="flex gap-2 flex-1">
-                          <Input
-                            type="number"
-                            min="1"
-                            max="45"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="h-8 w-24"
-                            autoFocus
-                          />
-                          <Button size="sm" className="h-8" onClick={() => handleScoreEdit(score.id)}>
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditingScore(null)}>
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-3">
-                            <span className="font-medium">{score.value}</span>
-                            <span className="text-sm text-gray-500">
-                              {format(new Date(score.date), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
-                            onClick={() => {
-                              setEditingScore(score.id);
-                              setEditValue(String(score.value));
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  {(!data?.scores || data.scores.length === 0) && (
-                    <p className="text-gray-500 text-sm">No scores yet</p>
-                  )}
+        {/* ── Subscription Section ── */}
+        <div id="subscription-section" className="mb-10 scroll-mt-24">
+          <Card className={isSubscribed ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">
+                    {isSubscribed ? '✅ Active Subscription' : '🔒 No Active Subscription'}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    {isSubscribed
+                      ? `You are on the ${data?.subscription?.plan} plan. All features are unlocked.`
+                      : 'Choose a plan below to unlock scores, draws, charity giving, and winnings.'}
+                  </CardDescription>
                 </div>
-              </CardContent>
-            </Card>
+                {isSubscribed && (
+                  <Badge className="bg-green-600 text-white capitalize">
+                    {data?.subscription?.plan}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
 
-            {/* Charity Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Charity Support</CardTitle>
-                <CardDescription>Choose a charity and set your contribution percentage</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data?.userCharity ? (
-                  <div className="mb-4 p-4 bg-green-50 rounded">
-                    <p className="font-medium">{data.userCharity.charity.name}</p>
-                    <p className="text-sm text-gray-600">{data.userCharity.percentage}% of winnings</p>
+            <CardContent>
+              {isSubscribed ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-300 text-red-600 hover:bg-red-50"
+                  onClick={handleCancel}
+                >
+                  Cancel Subscription
+                </Button>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Monthly plan */}
+                  <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-white">
+                    <p className="font-semibold text-gray-800">Monthly</p>
+                    <p className="text-sm text-gray-500 mt-1 mb-4">Billed every month. Cancel anytime.</p>
+                    <Button
+                      className="w-full bg-green-700 hover:bg-green-800 text-white"
+                      disabled={subscribing}
+                      onClick={() => handleSubscribe('monthly')}
+                    >
+                      {subscribing ? 'Processing...' : 'Subscribe Monthly'}
+                    </Button>
                   </div>
-                ) : null}
 
-                <form onSubmit={handleCharitySubmit} className="space-y-4">
-                  <div>
-                    <Label>Select Charity</Label>
-                    <Select value={selectedCharity} onValueChange={setSelectedCharity}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a charity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {charities.map((charity: any) => (
-                          <SelectItem key={charity.id} value={charity.id}>
-                            {charity.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Yearly plan */}
+                  <div className="flex-1 border-2 border-green-600 rounded-lg p-4 bg-white relative">
+                    <span className="absolute -top-3 left-3 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                      Best Value
+                    </span>
+                    <p className="font-semibold text-gray-800">Yearly</p>
+                    <p className="text-sm text-gray-500 mt-1 mb-4">Billed annually. Save more.</p>
+                    <Button
+                      className="w-full bg-green-700 hover:bg-green-800 text-white"
+                      disabled={subscribing}
+                      onClick={() => handleSubscribe('yearly')}
+                    >
+                      {subscribing ? 'Processing...' : 'Subscribe Yearly'}
+                    </Button>
                   </div>
-                  <div>
-                    <Label>Contribution Percentage (min 10%)</Label>
-                    <Input
-                      type="number"
-                      min="10"
-                      max="100"
-                      value={percentage}
-                      onChange={(e) => setPercentage(parseInt(e.target.value))}
-                    />
-                  </div>
-                  <Button type="submit">Update Charity</Button>
-                </form>
-              </CardContent>
-            </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Feature Grid ── */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+            <ScoresCard
+              subscription={data?.subscription ?? null}
+              scores={data?.scores ?? []}
+              onRefresh={fetchDashboardData}
+              onSubscribe={scrollToSubscribe}
+            />
+            <CharityCard
+              subscription={data?.subscription ?? null}
+              charities={charities}
+              userCharity={data?.userCharity ?? null}
+              onRefresh={fetchDashboardData}
+              onSubscribe={scrollToSubscribe}
+            />
           </div>
 
-          {/* Right Column */}
           <div className="space-y-8">
-            {/* Winnings Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Winnings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Summary Totals */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Total Prize Money</span>
-                    <span className="font-medium">${data?.totalGross?.toFixed(2) ?? '0.00'}</span>
-                  </div>
-
-                  {(data?.totalCharityDeduction ?? 0) > 0 && (
-                    <div className="flex justify-between text-sm text-rose-600">
-                      <span>
-                        Charity Donation ({data?.charityPercentage}%
-                        {data?.userCharity?.charity?.name ? ` → ${data.userCharity.charity.name}` : ''})
-                      </span>
-                      <span className="font-medium">− ${data?.totalCharityDeduction?.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  <div className="border-t pt-2 flex justify-between items-center">
-                    <span className="font-semibold text-gray-800">Net Winnings</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      ${data?.totalWinnings?.toFixed(2) ?? '0.00'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Per-Winner Breakdown */}
-                <div className="space-y-4">
-                  {data?.winners?.map((winner) => (
-                    <div key={winner.id} className="p-4 bg-white border rounded-lg space-y-3">
-                      {/* Header row */}
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="uppercase text-xs">
-                            {winner.matchType}
-                          </Badge>
-                          <span className="text-xs text-gray-500">{winner.draw?.month}</span>
-                        </div>
-                        <Badge variant={winner.status === 'paid' ? 'default' : 'secondary'}>
-                          {winner.status}
-                        </Badge>
-                      </div>
-
-                      {/* Amount breakdown */}
-                      <div className="bg-gray-50 rounded p-3 space-y-1.5 text-sm">
-                        <div className="flex justify-between text-gray-600">
-                          <span>Prize</span>
-                          <span>${winner.grossAmount.toFixed(2)}</span>
-                        </div>
-
-                        {winner.charityDeduction > 0 && (
-                          <div className="flex justify-between text-rose-600">
-                            <span>
-                              Charity ({winner.charityPercentage}%
-                              {winner.charityName ? ` → ${winner.charityName}` : ''})
-                            </span>
-                            <span>− ${winner.charityDeduction.toFixed(2)}</span>
-                          </div>
-                        )}
-
-                        <div className="border-t pt-1.5 flex justify-between font-semibold text-green-700">
-                          <span>You receive</span>
-                          <span>${winner.netAmount.toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      {/* Proof upload for unpaid winners */}
-                      {winner.status !== 'paid' && (
-                        <div className="border-t pt-3">
-                          <Label className="text-xs uppercase text-gray-500">Claim Proof (URL or Dummy String)</Label>
-                          <div className="flex gap-2 mt-1">
-                            <Input
-                              placeholder="Enter proof URL..."
-                              className="h-8 text-sm"
-                              onBlur={async (e) => {
-                                if (e.target.value) {
-                                  try {
-                                    const res = await fetch('/api/winners/proof', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ winnerId: winner.id, fileUrl: e.target.value }),
-                                    });
-                                    if (res.ok) fetchDashboardData();
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
-                                }
-                              }}
-                            />
-                            <Button size="sm" className="h-8">
-                              Upload
-                            </Button>
-                          </div>
-                          {winner.proof && (
-                            <p className="mt-2 text-xs text-blue-600">Proof submitted: {winner.proof.status}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {(!data?.winners || data.winners.length === 0) && (
-                    <p className="text-gray-500 text-sm">No winnings yet</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Latest Draw */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Latest Draw</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data?.latestDraw ? (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">{data.latestDraw.month} Draw</p>
-                    <div className="flex gap-2 mb-4">
-                      {JSON.parse(data.latestDraw.numbers).map((number: number, index: number) => (
-                        <div
-                          key={index}
-                          className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold"
-                        >
-                          {number}
-                        </div>
-                      ))}
-                    </div>
-                    <Badge variant="outline">{data.latestDraw.status}</Badge>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No draws yet</p>
-                )}
-              </CardContent>
-            </Card>
+            <WinningsCard
+              subscription={data?.subscription ?? null}
+              winners={data?.winners ?? []}
+              totalGross={data?.totalGross ?? 0}
+              totalCharityDeduction={data?.totalCharityDeduction ?? 0}
+              totalWinnings={data?.totalWinnings ?? 0}
+              charityPercentage={data?.charityPercentage ?? 0}
+              userCharity={data?.userCharity ?? null}
+              onRefresh={fetchDashboardData}
+              onSubscribe={scrollToSubscribe}
+            />
+            <LatestDrawCard
+              subscription={data?.subscription ?? null}
+              latestDraw={data?.latestDraw ?? null}
+              onSubscribe={scrollToSubscribe}
+            />
           </div>
         </div>
       </div>

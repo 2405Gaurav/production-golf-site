@@ -7,8 +7,7 @@ async function requireUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth-token')?.value;
   if (!token) return null;
-  const payload = await verifyToken(token);
-  return payload ?? null;
+  return verifyToken(token);
 }
 
 export async function GET() {
@@ -48,7 +47,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Cancel subscription
 export async function DELETE() {
   try {
     const payload = await requireUser();
@@ -57,17 +55,16 @@ export async function DELETE() {
     const existing = await prisma.subscription.findUnique({
       where: { userId: payload.userId },
     });
-
     if (!existing) {
-      return NextResponse.json({ error: 'No active subscription found' }, { status: 404 });
+      return NextResponse.json({ error: 'No subscription found' }, { status: 404 });
     }
 
-    const updated = await prisma.subscription.update({
+    const subscription = await prisma.subscription.update({
       where: { userId: payload.userId },
       data: { status: 'inactive' },
     });
 
-    return NextResponse.json({ subscription: updated });
+    return NextResponse.json({ subscription });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
