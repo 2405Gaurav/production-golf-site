@@ -6,7 +6,7 @@ import { charitySchema } from '@/lib/validations';
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     
     if (!token) {
@@ -34,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     
     if (!token) {

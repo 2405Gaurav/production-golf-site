@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db';
 export async function GET() {
   try {
     // 2. In Next.js 13.5.1, cookies() is synchronous. Remove 'await' to avoid TS warnings.
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -34,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
