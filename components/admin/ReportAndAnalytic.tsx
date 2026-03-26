@@ -1,8 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, Variants } from 'framer-motion';
+import { 
+  BarChart3, 
+  Users, 
+  Trophy, 
+  Heart, 
+  DollarSign, 
+  TrendingUp, 
+  PieChart, 
+  Activity 
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+// Animation Variants
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { 
+      delay: i * 0.1, 
+      duration: 0.7, 
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number] 
+    }
+  })
+};
 
 interface ReportsData {
   totalUsers: number;
@@ -35,166 +60,178 @@ export default function ReportsAnalytics() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="pt-6">
-              <div className="h-8 bg-gray-100 rounded animate-pulse mb-2" />
-              <div className="h-4 bg-gray-100 rounded animate-pulse w-2/3" />
-            </CardContent>
-          </Card>
+          <div key={i} className="h-32 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
         ))}
       </div>
     );
   }
 
-  if (!data) return <p className="text-sm text-gray-500">Failed to load reports.</p>;
+  if (!data) return (
+    <div className="p-12 border border-dashed border-white/10 rounded-2xl text-center">
+      <p className="text-[10px] uppercase tracking-widest text-white/20 italic font-bold">Terminal Connection Failed</p>
+    </div>
+  );
 
   const statCards = [
     {
-      label: 'Total Users',
+      label: 'Total Registered',
       value: data.totalUsers,
-      sub: `${data.activeSubscriptions} active subscriptions`,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      dot: 'bg-blue-500',
+      sub: `${data.activeSubscriptions} active members`,
+      icon: <Users className="w-4 h-4" />,
     },
     {
-      label: 'Total Prize Pool',
-      value: `$${data.totalPrizePool.toFixed(2)}`,
-      sub: `${data.drawStats.totalDraws} draws completed`,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-      dot: 'bg-green-500',
+      label: 'Prize Ledger',
+      value: `$${data.totalPrizePool.toLocaleString()}`,
+      sub: `${data.drawStats.totalDraws} completed events`,
+      icon: <DollarSign className="w-4 h-4" />,
     },
     {
-      label: 'Charity Contributions',
-      value: `$${data.totalCharityContributions.toFixed(2)}`,
-      sub: `Across ${data.charityBreakdown.length} charities`,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-      dot: 'bg-amber-500',
+      label: 'Charity Impact',
+      value: `$${data.totalCharityContributions.toLocaleString()}`,
+      sub: `Across ${data.charityBreakdown.length} entities`,
+      icon: <Heart className="w-4 h-4" />,
     },
     {
-      label: 'Draw Statistics',
+      label: 'Winner Index',
       value: data.drawStats.totalWinners,
-      sub: `${data.drawStats.pendingPayouts} pending · ${data.drawStats.paidPayouts} paid`,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
-      dot: 'bg-purple-500',
+      sub: `${data.drawStats.pendingPayouts} awaiting settlement`,
+      icon: <Trophy className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Top stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="pt-5 pb-4">
-              <div className={`inline-flex items-center gap-1.5 mb-3`}>
-                <span className={`w-2 h-2 rounded-full ${s.dot}`} />
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  {s.label}
-                </span>
+    <div className="space-y-10">
+      
+      {/* ── TOP STAT CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((s, i) => (
+          <motion.div
+            key={s.label}
+            custom={i}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 hover:bg-white/[0.04] transition-all duration-500 group"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-full bg-[#c8f04e]/10 flex items-center justify-center text-[#c8f04e]">
+                {s.icon}
               </div>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{s.sub}</p>
-            </CardContent>
-          </Card>
+              <span className="text-[9px] uppercase tracking-[0.3em] text-white/40 font-bold group-hover:text-[#c8f04e] transition-colors">
+                {s.label}
+              </span>
+            </div>
+            <p className="text-3xl font-black text-white italic tracking-tighter mb-1">
+              {s.value}
+            </p>
+            <p className="text-[9px] uppercase tracking-widest text-white/20 font-medium">
+              {s.sub}
+            </p>
+          </motion.div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Charity Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Charity Contribution Totals</CardTitle>
-            <CardDescription>Cumulative donations routed from winner payouts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data.charityBreakdown.length === 0 ? (
-              <p className="text-sm text-gray-400">No charity contributions yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {data.charityBreakdown.map((c) => {
-                  const pct =
-                    data.totalCharityContributions > 0
-                      ? (c.total / data.totalCharityContributions) * 100
-                      : 0;
+      <div className="grid lg:grid-cols-2 gap-10">
+        
+        {/* ── CHARITY BREAKDOWN ── */}
+        <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible">
+          <Card className="bg-white/[0.02] border-white/5 text-white p-8 rounded-2xl">
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <PieChart className="w-4 h-4 text-[#c8f04e]" />
+                <h3 className="text-[10px] uppercase tracking-[0.4em] text-[#c8f04e] font-bold">Impact Analytics</h3>
+              </div>
+              <p className="text-2xl font-bold tracking-tighter italic">Philanthropic <span className="text-white/40">Routing</span></p>
+            </div>
+            
+            <div className="space-y-6">
+              {data.charityBreakdown.length === 0 ? (
+                <p className="text-[10px] uppercase tracking-widest text-white/20 italic">No impact recorded.</p>
+              ) : (
+                data.charityBreakdown.map((c) => {
+                  const pct = data.totalCharityContributions > 0 ? (c.total / data.totalCharityContributions) * 100 : 0;
                   return (
-                    <div key={c.name}>
-                      <div className="flex justify-between items-center mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-800">{c.name}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {c.supporters} supporter{c.supporters !== 1 ? 's' : ''}
-                          </Badge>
+                    <div key={c.name} className="group/item">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-white group-hover/item:text-[#c8f04e] transition-colors">{c.name}</span>
+                          <span className="text-[8px] uppercase tracking-widest text-white/20 border border-white/5 px-2 py-0.5 rounded-full">
+                            {c.supporters} Supporters
+                          </span>
                         </div>
-                        <span className="text-sm font-semibold text-amber-600">
+                        <span className="text-xs font-black text-[#c8f04e] italic">
                           ${c.total.toFixed(2)}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5">
-                        <div
-                          className="bg-amber-400 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
+                      <div className="w-full bg-white/5 rounded-full h-[3px] overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 1.5, ease: "circOut" }}
+                          className="bg-[#c8f04e] h-full"
                         />
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                })
+              )}
+            </div>
+          </Card>
+        </motion.div>
 
-        {/* Draw Statistics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Draw Statistics</CardTitle>
-            <CardDescription>Winner tier breakdown across all completed draws</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+        {/* ── DRAW STATISTICS ── */}
+        <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
+          <Card className="bg-white/[0.02] border-white/5 text-white p-8 rounded-2xl h-full flex flex-col">
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-4 h-4 text-[#c8f04e]" />
+                <h3 className="text-[10px] uppercase tracking-[0.4em] text-[#c8f04e] font-bold">Performance Delta</h3>
+              </div>
+              <p className="text-2xl font-bold tracking-tighter italic">Winner <span className="text-white/40">Distribution</span></p>
+            </div>
+
+            <div className="space-y-6 flex-1">
               {[
-                { label: 'Tier 1 Winners', count: data.drawStats.tier1Count, color: 'bg-yellow-400' },
-                { label: 'Tier 2 Winners', count: data.drawStats.tier2Count, color: 'bg-gray-300' },
-                { label: 'Tier 3 Winners', count: data.drawStats.tier3Count, color: 'bg-orange-300' },
+                { label: 'Tier 1 (5-Number)', count: data.drawStats.tier1Count, color: 'bg-[#c8f04e]' },
+                { label: 'Tier 2 (4-Number)', count: data.drawStats.tier2Count, color: 'bg-white/40' },
+                { label: 'Tier 3 (3-Number)', count: data.drawStats.tier3Count, color: 'bg-white/10' },
               ].map((t) => {
-                const pct =
-                  data.drawStats.totalWinners > 0
-                    ? (t.count / data.drawStats.totalWinners) * 100
-                    : 0;
+                const pct = data.drawStats.totalWinners > 0 ? (t.count / data.drawStats.totalWinners) * 100 : 0;
                 return (
                   <div key={t.label}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">{t.label}</span>
-                      <span className="text-sm font-semibold text-gray-800">{t.count}</span>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{t.label}</span>
+                      <span className="text-xs font-black text-white">{t.count}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div
-                        className={`${t.color} h-1.5 rounded-full transition-all duration-500`}
-                        style={{ width: `${pct}%` }}
+                    <div className="w-full bg-white/5 rounded-full h-[3px] overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1.5, ease: "circOut" }}
+                        className={`${t.color} h-full`}
                       />
                     </div>
                   </div>
                 );
               })}
+            </div>
 
-              <div className="border-t pt-3 mt-3 grid grid-cols-2 gap-3">
-                <div className="bg-orange-50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-orange-600">{data.drawStats.pendingPayouts}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Pending Payouts</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold text-green-600">{data.drawStats.paidPayouts}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Paid Out</p>
-                </div>
+            {/* Payout Settlement Row */}
+            <div className="mt-10 pt-8 border-t border-white/5 grid grid-cols-2 gap-4">
+              <div className="bg-[#141b18] border border-white/5 rounded-xl p-4 text-center group hover:border-amber-500/20 transition-all">
+                <p className="text-2xl font-black text-amber-500 italic tracking-tighter">{data.drawStats.pendingPayouts}</p>
+                <p className="text-[8px] uppercase tracking-[0.4em] text-white/20 mt-1 font-bold">Pending Settlement</p>
+              </div>
+              <div className="bg-[#141b18] border border-white/5 rounded-xl p-4 text-center group hover:border-[#c8f04e]/20 transition-all">
+                <p className="text-2xl font-black text-[#c8f04e] italic tracking-tighter">{data.drawStats.paidPayouts}</p>
+                <p className="text-[8px] uppercase tracking-[0.4em] text-white/20 mt-1 font-bold">Funds Disbursed</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        </motion.div>
+
       </div>
     </div>
   );
