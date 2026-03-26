@@ -139,61 +139,65 @@ export default function DashboardPage() {
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
 
       {/* ── STICKY HEADER ── */}
-      <header className="sticky top-0 z-40 bg-[#0a0f0d]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-[1600px] mx-auto px-6 sm:px-12 py-4 flex items-center justify-between gap-4">
-          
-          {/* Left: Home + Title */}
-          <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              className="group flex items-center gap-2 text-white/30 hover:text-[#c8f04e] transition-colors duration-300"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
-              <span className="text-[9px] uppercase tracking-[0.4em] font-bold hidden sm:block">Home</span>
-            </Link>
+    <header className="sticky top-0 z-40 bg-[#0a0f0d]/90 backdrop-blur-xl border-b border-white/5">
+  <div className="max-w-[1600px] mx-auto px-6 sm:px-12">
+    
+    <div className="grid grid-cols-3 items-center h-16">
 
-            {/* Divider */}
-            <div className="w-px h-5 bg-white/10" />
+      {/* LEFT */}
+      <div className="flex items-center gap-4">
+        <Link
+          href="/"
+          className="group flex items-center gap-2 text-white/30 hover:text-[#c8f04e] transition-colors duration-300"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
+          <span className="text-[10px] uppercase tracking-[0.3em] font-bold hidden sm:block">
+            Home
+          </span>
+        </Link>
+      </div>
 
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.4em] text-[#c8f04e] font-bold leading-none mb-1">
-                Member Dashboard
-              </p>
-              <div className="text-lg font-bold tracking-tighter italic leading-none">
-                Fairway <span className="text-white/30">Access</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Status + Logout */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            <AnimatePresence>
-              {isSubscribed && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="hidden sm:flex items-center gap-2 bg-[#c8f04e]/10 border border-[#c8f04e]/20 px-3 py-1.5 rounded-full"
-                >
-                  <ShieldCheck className="w-3 h-3 text-[#c8f04e]" />
-                  <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-[#c8f04e] ">
-                    {data?.subscription?.plan} Member
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-white/20 hover:text-white hover:bg-white/5 text-[9px] uppercase tracking-widest gap-2 px-2 h-8"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:block">Logout</span>
-            </Button>
-          </div>
+      {/* CENTER (🔥 now actually centered) */}
+      <div className="flex flex-col items-center justify-center text-center leading-none">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[#c8f04e] font-bold mb-1">
+          Member Dashboard
+        </p>
+        <div className="text-lg font-bold tracking-tight italic">
+          Fairway <span className="text-white/30">Access</span>
         </div>
-      </header>
+      </div>
+
+      {/* RIGHT */}
+      <div className="flex items-center justify-end gap-4 sm:gap-6">
+        <AnimatePresence>
+          {isSubscribed && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="hidden sm:flex items-center gap-2 bg-[#c8f04e]/10 border border-[#c8f04e]/20 px-3 py-1.5 rounded-full"
+            >
+              <ShieldCheck className="w-3 h-3 text-[#c8f04e]" />
+              <span className="text-[9px] uppercase tracking-[0.25em] font-bold text-[#c8f04e]">
+                {data?.subscription?.plan} Member
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="text-white/30 hover:text-white hover:bg-white/5 text-[10px] uppercase tracking-[0.25em] gap-2 px-2 h-8"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="hidden sm:block">Logout</span>
+        </Button>
+      </div>
+
+    </div>
+  </div>
+</header>
 
       <main className="max-w-[1600px] mx-auto px-6 sm:px-12 py-10 pb-24">
 
