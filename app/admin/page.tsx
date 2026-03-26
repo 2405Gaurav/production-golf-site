@@ -12,7 +12,8 @@ import {
   LogOut,  
   AlertCircle,
   Play,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -209,78 +210,101 @@ export default function AdminPage() {
           </TabsList>
 
           {/* ── DRAW MANAGEMENT ── */}
-          <TabsContent value="draws" className="outline-none">
-            <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible" className="max-w-3xl space-y-6">
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-8 md:p-10">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold tracking-tighter mb-1.5 italic">Monthly <span className="text-white/40">Draw Engine</span></h2>
-                  <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-semibold leading-relaxed">System-wide number generation and prize distribution.</p>
+         <TabsContent value="draws" className="outline-none">
+  <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible" className="max-w-3xl space-y-6">
+    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-8 md:p-10">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold tracking-tighter mb-1.5 italic">
+          Monthly <span className="text-white/40">Draw Engine</span>
+        </h2>
+        <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-semibold leading-relaxed">
+          System-wide number generation and prize distribution.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {/* IMPROVED DROPDOWN SECTION */}
+        <div className="flex items-center gap-5 p-3.5 bg-black/40 rounded-lg border border-white/10 max-w-sm">
+          <Label className="text-[9px] uppercase tracking-widest text-white/40 shrink-0">Algorithm Mode</Label>
+          <div className="relative flex-1">
+            <select
+              className="w-full bg-transparent text-[#c8f04e] font-bold text-[10px] uppercase tracking-widest border-none outline-none cursor-pointer appearance-none pr-4"
+              value={drawMode}
+              onChange={e => setDrawMode(e.target.value as 'random' | 'algorithmic')}
+              style={{ backgroundColor: 'transparent' }}
+            >
+              {/* Note: Native options have limited styling, but adding classes helps in some browsers */}
+              <option value="random" className="bg-[#121212] text-white">Pure Random</option>
+              <option value="algorithmic" className="bg-[#121212] text-white">Weighted Algorithmic</option>
+            </select>
+            {/* Custom Arrow for the dropdown */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+              <ChevronDown className="w-3 h-3 text-[#c8f04e]" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          {/* VISIBILITY FIX: Changed Run Simulation from outline to a visible subtle background */}
+          <Button 
+            variant="ghost" 
+            onClick={handleSimulate} 
+            className="bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white text-[9px] uppercase tracking-widest font-bold h-10 px-6 transition-all"
+          >
+            Run Simulation
+          </Button>
+          
+          <Button 
+            onClick={handleCreateDraw} 
+            disabled={!!draftDraw} 
+            className="bg-white text-black hover:bg-[#c8f04e] disabled:opacity-50 text-[9px] uppercase tracking-widest font-bold h-10 px-6"
+          >
+            Generate Draft
+          </Button>
+        </div>
+
+        {/* Draft section */}
+        {draftDraw && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="border border-[#c8f04e]/30 bg-[#c8f04e]/[0.03] rounded-xl p-6 relative overflow-hidden mt-4 shadow-[0_0_20px_rgba(200,240,78,0.05)]"
+          >
+            <div className="absolute top-0 right-0 p-3"><AlertCircle className="text-[#c8f04e] w-3.5 h-3.5 opacity-50" /></div>
+            <p className="text-[#c8f04e] text-[9px] uppercase tracking-[0.4em] font-black mb-4 italic flex items-center gap-2">
+              <span className="w-1 h-1 bg-[#c8f04e] rounded-full animate-ping" />
+              Draft Ready — Confirm Results
+            </p>
+            
+            <div className="flex gap-2.5 mb-6">
+              {JSON.parse(draftDraw.numbers).map((n: number, i: number) => (
+                <div key={i} className="w-8 h-8 rounded-full border border-[#c8f04e] flex items-center justify-center font-black text-[#c8f04e] text-xs">{n}</div>
+              ))}
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <p className="text-[10px] text-white/60">Identified <span className="text-white font-bold">{draftWinners.length} winner(s)</span></p>
+              {draftWinners.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {draftWinners.map((w: any) => (
+                    <div key={w.id} className="text-[9px] p-2 bg-black/60 rounded border border-white/5 flex justify-between items-center">
+                      <span className="text-white/40 truncate max-w-[120px]">{w.user?.email}</span>
+                      <span className="text-[#c8f04e] font-bold">£{w.amount?.toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <div className="space-y-6">
-                  <div className="flex items-center gap-5 p-3.5 bg-white/[0.02] rounded-lg border border-white/5 max-w-sm">
-                    <Label className="text-[9px] uppercase tracking-widest text-white/40">Algorithm Mode</Label>
-                    <select
-                      className="bg-transparent text-[#c8f04e] font-bold text-[10px] uppercase tracking-widest border-none outline-none cursor-pointer"
-                      value={drawMode}
-                      onChange={e => setDrawMode(e.target.value as 'random' | 'algorithmic')}
-                    >
-                      <option value="random">Pure Random</option>
-                      <option value="algorithmic">Weighted Algorithmic</option>
-                    </select>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={handleSimulate} className="border-white/10 hover:bg-white/5 text-[9px] uppercase tracking-widest font-bold h-10 px-6">
-                      Run Simulation
-                    </Button>
-                    <Button onClick={handleCreateDraw} disabled={!!draftDraw} className="bg-white text-black hover:bg-[#c8f04e] text-[9px] uppercase tracking-widest font-bold h-10 px-6">
-                      Generate Draft
-                    </Button>
-                  </div>
-
-                  {/* VISIBILITY FIX: Draft section is now more compact and visually striking */}
-                  {draftDraw && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.98 }} 
-                      animate={{ opacity: 1, scale: 1 }} 
-                      className="border border-[#c8f04e]/30 bg-[#c8f04e]/[0.03] rounded-xl p-6 relative overflow-hidden mt-4 shadow-[0_0_20px_rgba(200,240,78,0.05)]"
-                    >
-                      <div className="absolute top-0 right-0 p-3"><AlertCircle className="text-[#c8f04e] w-3.5 h-3.5 opacity-50" /></div>
-                      <p className="text-[#c8f04e] text-[9px] uppercase tracking-[0.4em] font-black mb-4 italic flex items-center gap-2">
-                        <span className="w-1 h-1 bg-[#c8f04e] rounded-full animate-ping" />
-                        Draft Ready — Confirm Results
-                      </p>
-                      
-                      <div className="flex gap-2.5 mb-6">
-                        {JSON.parse(draftDraw.numbers).map((n: number, i: number) => (
-                          <div key={i} className="w-8 h-8 rounded-full border border-[#c8f04e] flex items-center justify-center font-black text-[#c8f04e] text-xs">{n}</div>
-                        ))}
-                      </div>
-
-                      <div className="space-y-3 mb-6">
-                        <p className="text-[10px] text-white/60">Identified <span className="text-white font-bold">{draftWinners.length} winner(s)</span></p>
-                        {draftWinners.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                            {draftWinners.map((w: any) => (
-                              <div key={w.id} className="text-[9px] p-2 bg-black/60 rounded border border-white/5 flex justify-between items-center">
-                                <span className="text-white/40 truncate max-w-[120px]">{w.user?.email}</span>
-                                <span className="text-[#c8f04e] font-bold">£{w.amount?.toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <Button onClick={handlePublish} className="w-full bg-[#c8f04e] text-black font-black uppercase tracking-[0.3em] h-10 text-[9px] rounded-lg hover:bg-white">
-                        Publish Results to Estate
-                      </Button>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </TabsContent>
+            <Button onClick={handlePublish} className="w-full bg-[#c8f04e] text-black font-black uppercase tracking-[0.3em] h-10 text-[9px] rounded-lg hover:bg-white transition-colors">
+              Publish Results to Estate
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  </motion.div>
+</TabsContent>
 
           {/* ── CHARITIES ── */}
           <TabsContent value="charities">
