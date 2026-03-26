@@ -6,7 +6,7 @@ import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 async function requireUser() {
-  const cookieStore = cookies(); // Sync in 13.5.1
+  const cookieStore = await cookies(); // Sync in 13.5.1
   const token = cookieStore.get('auth-token')?.value;
   if (!token) return null;
   return verifyToken(token);
