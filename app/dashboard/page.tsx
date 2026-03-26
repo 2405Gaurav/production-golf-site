@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [percentage, setPercentage] = useState(10);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [editingScore, setEditingScore] = useState<string | null>(null);
+const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -48,6 +50,27 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+  const handleScoreEdit = async (scoreId: string) => {
+  if (!editValue) return;
+  try {
+    const response = await fetch('/api/scores', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scoreId, value: parseInt(editValue) }),
+    });
+    if (response.ok) {
+      setEditingScore(null);
+      setEditValue('');
+      fetchDashboardData();
+    } else {
+      const error = await response.json();
+      alert(error.error);
+    }
+  } catch (error) {
+    console.error('Error editing score:', error);
+  }
+};
+
 
   const fetchCharities = async () => {
     try {
@@ -222,19 +245,54 @@ export default function DashboardPage() {
                   </div>
                 </form>
                 
-                <div className="space-y-2">
-                  {data?.scores?.map((score) => (
-                    <div key={score.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span className="font-medium">{score.value}</span>
-                      <span className="text-sm text-gray-500">
-                        {format(new Date(score.date), 'MMM dd, yyyy')}
-                      </span>
-                    </div>
-                  ))}
-                  {(!data?.scores || data.scores.length === 0) && (
-                    <p className="text-gray-500 text-sm">No scores yet</p>
-                  )}
-                </div>
+           <div className="space-y-2">
+  {data?.scores?.map((score) => (
+    <div key={score.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+      {editingScore === score.id ? (
+        <div className="flex gap-2 flex-1">
+          <Input
+            type="number"
+            min="1"
+            max="45"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="h-8 w-24"
+            autoFocus
+          />
+          <Button size="sm" className="h-8" onClick={() => handleScoreEdit(score.id)}>
+            Save
+          </Button>
+          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditingScore(null)}>
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3">
+            <span className="font-medium">{score.value}</span>
+            <span className="text-sm text-gray-500">
+              {format(new Date(score.date), 'MMM dd, yyyy')}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={() => {
+              setEditingScore(score.id);
+              setEditValue(String(score.value));
+            }}
+          >
+            Edit
+          </Button>
+        </>
+      )}
+    </div>
+  ))}
+  {(!data?.scores || data.scores.length === 0) && (
+    <p className="text-gray-500 text-sm">No scores yet</p>
+  )}
+</div>
               </CardContent>
             </Card>
 

@@ -57,6 +57,52 @@ export async function POST(request: Request) {
   }
 }
 
+
+const patchSchema = z.object({
+  scoreId: z.string(),
+  value: z.number().min(1).max(45),
+  date: z.string().optional(),
+});
+
+export async function PATCH(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
+
+    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const payload = await verifyToken(token);
+    if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+
+    const body = await request.json();
+    const { scoreId, value, date } = patchSchema.parse(body);
+
+    // Make sure the score belongs to this user
+    const existing = await prisma.score.findUnique({ where: { id: scoreId } });
+    if (!existing || existing.userId !== payload.userId) {
+      return NextResponse.json({ error: 'Score not found or unauthorized' }, { status: 404 });
+    }
+
+    const updated = await prisma.score.update({
+      where: { id: scoreId },
+      data: {
+        value,
+        date: date ? new Date(date) : existing.date,
+      },
+    });
+
+    const updatedScores = await prisma.score.findMany({
+      where: { userId: payload.userId },
+      orderBy: { date: 'desc' },
+    });
+
+    return NextResponse.json({ score: updated, scores: updatedScores });
+  } catch (error) {
+    console.error('Score update error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
