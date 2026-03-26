@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { format } from 'date-fns';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
