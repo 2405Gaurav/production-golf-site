@@ -5,12 +5,10 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+
+    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const payload = await verifyToken(token);
     if (!payload || payload.role !== 'admin') {
@@ -18,11 +16,7 @@ export async function GET() {
     }
 
     const winners = await prisma.winner.findMany({
-      include: {
-        user: true,
-        draw: true,
-        proof: true,
-      },
+      include: { user: true, draw: true, proof: true },
       orderBy: { draw: { date: 'desc' } },
     });
 
@@ -35,33 +29,24 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
 
-      const payload = await verifyToken(token);
+    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const payload = await verifyToken(token);
     if (!payload || payload.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { winnerId, status, proofId, proofStatus } = body;
+    const { winnerId, status, proofId, proofStatus } = await request.json();
 
     if (proofId && proofStatus) {
-      await prisma.proof.update({
-        where: { id: proofId },
-        data: { status: proofStatus },
-      });
+      await prisma.proof.update({ where: { id: proofId }, data: { status: proofStatus } });
     }
 
     if (winnerId && status) {
-      await prisma.winner.update({
-        where: { id: winnerId },
-        data: { status },
-      });
+      await prisma.winner.update({ where: { id: winnerId }, data: { status } });
     }
 
     return NextResponse.json({ message: 'Update successful' });

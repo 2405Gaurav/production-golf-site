@@ -333,9 +333,20 @@ const handlePublish = async () => {
                         <TableCell>
                           {w.proof ? (
                             <div className="space-y-1">
-                              <p className="text-xs truncate max-w-[100px]">{w.proof.fileUrl}</p>
-                              <Badge variant={w.proof.status === 'approved' ? 'default' : 'outline'}>{w.proof.status}</Badge>
-                            </div>
+    <a
+      href={w.proof.fileUrl.startsWith('http') ? w.proof.fileUrl : `https://${w.proof.fileUrl}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs text-blue-600 hover:underline block truncate max-w-[120px]"
+      title={w.proof.fileUrl}
+    >
+      {w.proof.fileUrl}
+    </a>
+
+    <Badge variant={w.proof.status === 'approved' ? 'default' : 'outline'}>
+      {w.proof.status}
+    </Badge>
+  </div>
                           ) : 'No proof'}
                         </TableCell>
                         <TableCell>
