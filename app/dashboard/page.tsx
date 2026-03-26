@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import SubscriptionCard from '@/components/dashboard/SubscriptionCard';
 
 interface WinnerWithBreakdown {
   id: string;
@@ -185,50 +186,12 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Subscription Status */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data?.subscription ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Badge variant={data.subscription.status === 'active' ? 'default' : 'secondary'}>
-                      {data.subscription.status}
-                    </Badge>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {data.subscription.plan} plan since{' '}
-                      {format(new Date(data.subscription.startDate), 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                  <div className="space-x-2">
-                    <Button
-                      variant={data.subscription.plan === 'monthly' ? 'default' : 'outline'}
-                      onClick={() => handleSubscriptionUpdate('monthly')}
-                    >
-                      Monthly
-                    </Button>
-                    <Button
-                      variant={data.subscription.plan === 'yearly' ? 'default' : 'outline'}
-                      onClick={() => handleSubscriptionUpdate('yearly')}
-                    >
-                      Yearly
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-gray-600 mb-4">No active subscription</p>
-                  <div className="space-x-2">
-                    <Button onClick={() => handleSubscriptionUpdate('monthly')}>Subscribe Monthly</Button>
-                    <Button onClick={() => handleSubscriptionUpdate('yearly')}>Subscribe Yearly</Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+       <div className="mb-8">
+  <SubscriptionCard
+    subscription={data?.subscription ?? null}
+    onUpdate={fetchDashboardData}
+  />
+</div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column */}

@@ -11,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import ReportsAnalytics from '@/components/admin/ReportAndAnalytic';
+import AdminUsers from '@/components/admin/AdminUsers';
 
 export default function AdminPage() {
   const [charities, setCharities] = useState([]);
-  const [users, setUsers] = useState([]);
+ 
   const [winners, setWinners] = useState([]);
   const [newCharity, setNewCharity] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ const [draftWinners, setDraftWinners] = useState<any[]>([]);
     setLoading(true);
     await Promise.all([
       fetchCharities(),
-      fetchUsers(),
+     
       fetchWinners()
     ]);
     setLoading(false);
@@ -51,17 +52,7 @@ const [draftWinners, setDraftWinners] = useState<any[]>([]);
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/admin/users');
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
+ 
 
   const fetchWinners = async () => {
     try {
@@ -159,7 +150,7 @@ const handlePublish = async () => {
     }
   };
 
-  if (loading && !charities.length && !users.length) {
+  if (loading && !charities.length ) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div>Loading...</div>
@@ -279,34 +270,8 @@ const handlePublish = async () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Subscription</TableHead>
-                      <TableHead>Latest Scores</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((u: any) => (
-                      <TableRow key={u.id}>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell><Badge>{u.role}</Badge></TableCell>
-                        <TableCell>{u.subscription?.status || 'N/A'}</TableCell>
-                        <TableCell>{u.scores?.map((s: any) => s.value).join(', ') || 'No scores'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+  <AdminUsers />
+</TabsContent>
           <TabsContent value="reports">
   <ReportsAnalytics />
 </TabsContent>
