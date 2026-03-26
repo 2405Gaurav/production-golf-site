@@ -73,7 +73,7 @@ export async function POST(request: Request) {
           data: {
             userId: user.id,
             drawId: draw.id,
-            scoresSnapshot: JSON.stringify(user.scores.map(s => s.value)),
+            scoresSnapshot: JSON.stringify(user.scores.map((s: { value: number }) => s.value)),
           },
         });
       }
