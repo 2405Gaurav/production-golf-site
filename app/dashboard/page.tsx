@@ -10,13 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
+interface WinnerWithBreakdown {
+  id: string;
+  matchType: string;
+  status: string;
+  grossAmount: number;
+  charityDeduction: number;
+  charityPercentage: number;
+  charityName: string | null;
+  netAmount: number;
+  draw: any;
+  proof?: { status: string } | null;
+}
+
 interface DashboardData {
   subscription: any;
   scores: any[];
   userCharity: any;
   totalWinnings: number;
+  totalGross: number;
+  totalCharityDeduction: number;
+  charityPercentage: number;
   latestDraw: any;
-  winners: any[];
+  winners: WinnerWithBreakdown[];
 }
 
 export default function DashboardPage() {
@@ -28,7 +44,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [editingScore, setEditingScore] = useState<string | null>(null);
-const [editValue, setEditValue] = useState('');
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -50,27 +66,27 @@ const [editValue, setEditValue] = useState('');
       setLoading(false);
     }
   };
-  const handleScoreEdit = async (scoreId: string) => {
-  if (!editValue) return;
-  try {
-    const response = await fetch('/api/scores', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scoreId, value: parseInt(editValue) }),
-    });
-    if (response.ok) {
-      setEditingScore(null);
-      setEditValue('');
-      fetchDashboardData();
-    } else {
-      const error = await response.json();
-      alert(error.error);
-    }
-  } catch (error) {
-    console.error('Error editing score:', error);
-  }
-};
 
+  const handleScoreEdit = async (scoreId: string) => {
+    if (!editValue) return;
+    try {
+      const response = await fetch('/api/scores', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scoreId, value: parseInt(editValue) }),
+      });
+      if (response.ok) {
+        setEditingScore(null);
+        setEditValue('');
+        fetchDashboardData();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Error editing score:', error);
+    }
+  };
 
   const fetchCharities = async () => {
     try {
@@ -92,7 +108,6 @@ const [editValue, setEditValue] = useState('');
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: parseInt(newScore) }),
       });
-
       if (response.ok) {
         setNewScore('');
         fetchDashboardData();
@@ -113,7 +128,6 @@ const [editValue, setEditValue] = useState('');
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ charityId: selectedCharity, percentage }),
       });
-
       if (response.ok) {
         fetchDashboardData();
       }
@@ -129,7 +143,6 @@ const [editValue, setEditValue] = useState('');
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
-
       if (response.ok) {
         fetchDashboardData();
       }
@@ -138,15 +151,15 @@ const [editValue, setEditValue] = useState('');
     }
   };
 
- const handleLogout = async () => {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.refresh();
-    router.replace('/');
-  } catch (error) {
-    console.error('Error logging out:', error);
-  }
-};
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.refresh();
+      router.replace('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -185,7 +198,8 @@ const [editValue, setEditValue] = useState('');
                       {data.subscription.status}
                     </Badge>
                     <p className="text-sm text-gray-600 mt-1">
-                      {data.subscription.plan} plan since {format(new Date(data.subscription.startDate), 'MMM dd, yyyy')}
+                      {data.subscription.plan} plan since{' '}
+                      {format(new Date(data.subscription.startDate), 'MMM dd, yyyy')}
                     </p>
                   </div>
                   <div className="space-x-2">
@@ -207,12 +221,8 @@ const [editValue, setEditValue] = useState('');
                 <div>
                   <p className="text-gray-600 mb-4">No active subscription</p>
                   <div className="space-x-2">
-                    <Button onClick={() => handleSubscriptionUpdate('monthly')}>
-                      Subscribe Monthly
-                    </Button>
-                    <Button onClick={() => handleSubscriptionUpdate('yearly')}>
-                      Subscribe Yearly
-                    </Button>
+                    <Button onClick={() => handleSubscriptionUpdate('monthly')}>Subscribe Monthly</Button>
+                    <Button onClick={() => handleSubscriptionUpdate('yearly')}>Subscribe Yearly</Button>
                   </div>
                 </div>
               )}
@@ -244,55 +254,55 @@ const [editValue, setEditValue] = useState('');
                     <Button type="submit">Add Score</Button>
                   </div>
                 </form>
-                
-           <div className="space-y-2">
-  {data?.scores?.map((score) => (
-    <div key={score.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-      {editingScore === score.id ? (
-        <div className="flex gap-2 flex-1">
-          <Input
-            type="number"
-            min="1"
-            max="45"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            className="h-8 w-24"
-            autoFocus
-          />
-          <Button size="sm" className="h-8" onClick={() => handleScoreEdit(score.id)}>
-            Save
-          </Button>
-          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditingScore(null)}>
-            Cancel
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-3">
-            <span className="font-medium">{score.value}</span>
-            <span className="text-sm text-gray-500">
-              {format(new Date(score.date), 'MMM dd, yyyy')}
-            </span>
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={() => {
-              setEditingScore(score.id);
-              setEditValue(String(score.value));
-            }}
-          >
-            Edit
-          </Button>
-        </>
-      )}
-    </div>
-  ))}
-  {(!data?.scores || data.scores.length === 0) && (
-    <p className="text-gray-500 text-sm">No scores yet</p>
-  )}
-</div>
+
+                <div className="space-y-2">
+                  {data?.scores?.map((score) => (
+                    <div key={score.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      {editingScore === score.id ? (
+                        <div className="flex gap-2 flex-1">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="45"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="h-8 w-24"
+                            autoFocus
+                          />
+                          <Button size="sm" className="h-8" onClick={() => handleScoreEdit(score.id)}>
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-8" onClick={() => setEditingScore(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium">{score.value}</span>
+                            <span className="text-sm text-gray-500">
+                              {format(new Date(score.date), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              setEditingScore(score.id);
+                              setEditValue(String(score.value));
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {(!data?.scores || data.scores.length === 0) && (
+                    <p className="text-gray-500 text-sm">No scores yet</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -309,7 +319,7 @@ const [editValue, setEditValue] = useState('');
                     <p className="text-sm text-gray-600">{data.userCharity.percentage}% of winnings</p>
                   </div>
                 ) : null}
-                
+
                 <form onSubmit={handleCharitySubmit} className="space-y-4">
                   <div>
                     <Label>Select Charity</Label>
@@ -344,30 +354,80 @@ const [editValue, setEditValue] = useState('');
 
           {/* Right Column */}
           <div className="space-y-8">
-            {/* Winnings */}
+            {/* Winnings Summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Your Winnings</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 mb-4">
-                  ${data?.totalWinnings?.toFixed(2) || '0.00'}
+                {/* Summary Totals */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Total Prize Money</span>
+                    <span className="font-medium">${data?.totalGross?.toFixed(2) ?? '0.00'}</span>
+                  </div>
+
+                  {(data?.totalCharityDeduction ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-rose-600">
+                      <span>
+                        Charity Donation ({data?.charityPercentage}%
+                        {data?.userCharity?.charity?.name ? ` → ${data.userCharity.charity.name}` : ''})
+                      </span>
+                      <span className="font-medium">− ${data?.totalCharityDeduction?.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-2 flex justify-between items-center">
+                    <span className="font-semibold text-gray-800">Net Winnings</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      ${data?.totalWinnings?.toFixed(2) ?? '0.00'}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Per-Winner Breakdown */}
                 <div className="space-y-4">
                   {data?.winners?.map((winner) => (
-                    <div key={winner.id} className="p-4 bg-gray-50 rounded-lg space-y-4">
+                    <div key={winner.id} className="p-4 bg-white border rounded-lg space-y-3">
+                      {/* Header row */}
                       <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-bold text-lg">${winner.amount.toFixed(2)}</span>
-                          <Badge variant="outline" className="ml-2 uppercase">{winner.matchType}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="uppercase text-xs">
+                            {winner.matchType}
+                          </Badge>
+                          <span className="text-xs text-gray-500">{winner.draw?.month}</span>
                         </div>
                         <Badge variant={winner.status === 'paid' ? 'default' : 'secondary'}>
                           {winner.status}
                         </Badge>
                       </div>
 
+                      {/* Amount breakdown */}
+                      <div className="bg-gray-50 rounded p-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between text-gray-600">
+                          <span>Prize</span>
+                          <span>${winner.grossAmount.toFixed(2)}</span>
+                        </div>
+
+                        {winner.charityDeduction > 0 && (
+                          <div className="flex justify-between text-rose-600">
+                            <span>
+                              Charity ({winner.charityPercentage}%
+                              {winner.charityName ? ` → ${winner.charityName}` : ''})
+                            </span>
+                            <span>− ${winner.charityDeduction.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        <div className="border-t pt-1.5 flex justify-between font-semibold text-green-700">
+                          <span>You receive</span>
+                          <span>${winner.netAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      {/* Proof upload for unpaid winners */}
                       {winner.status !== 'paid' && (
-                        <div className="border-t pt-4">
+                        <div className="border-t pt-3">
                           <Label className="text-xs uppercase text-gray-500">Claim Proof (URL or Dummy String)</Label>
                           <div className="flex gap-2 mt-1">
                             <Input
@@ -388,17 +448,18 @@ const [editValue, setEditValue] = useState('');
                                 }
                               }}
                             />
-                            <Button size="sm" className="h-8">Upload</Button>
+                            <Button size="sm" className="h-8">
+                              Upload
+                            </Button>
                           </div>
                           {winner.proof && (
-                            <p className="mt-2 text-xs text-blue-600">
-                              Proof submitted: {winner.proof.status}
-                            </p>
+                            <p className="mt-2 text-xs text-blue-600">Proof submitted: {winner.proof.status}</p>
                           )}
                         </div>
                       )}
                     </div>
                   ))}
+
                   {(!data?.winners || data.winners.length === 0) && (
                     <p className="text-gray-500 text-sm">No winnings yet</p>
                   )}
@@ -414,9 +475,7 @@ const [editValue, setEditValue] = useState('');
               <CardContent>
                 {data?.latestDraw ? (
                   <div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {data.latestDraw.month} Draw
-                    </p>
+                    <p className="text-sm text-gray-600 mb-2">{data.latestDraw.month} Draw</p>
                     <div className="flex gap-2 mb-4">
                       {JSON.parse(data.latestDraw.numbers).map((number: number, index: number) => (
                         <div

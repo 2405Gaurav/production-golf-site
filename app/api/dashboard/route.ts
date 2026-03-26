@@ -27,19 +27,55 @@ export async function GET() {
       prisma.winner.findMany({
         where: {
           userId: payload.userId,
-          draw: { status: 'completed' }, // only published draws
+          draw: { status: 'completed' },
         },
-        include: { draw: true },
+        include: {
+          draw: true,
+          proof: true,
+        },
+        orderBy: { id: 'desc' },
       }),
       prisma.draw.findFirst({
-        where: { status: 'completed' }, // only published draws
+        where: { status: 'completed' },
         orderBy: { date: 'desc' },
       }),
     ]);
 
-    const totalWinnings = winners.reduce((sum, w) => sum + w.amount, 0);
+    // Attach charity deduction breakdown to each winner
+    const charityPercentage = userCharity?.percentage ?? 0;
+    const winnersWithBreakdown = winners.map((winner) => {
+      const charityDeduction = parseFloat(
+        ((winner.amount * charityPercentage) / 100).toFixed(2)
+      );
+      const netAmount = parseFloat((winner.amount - charityDeduction).toFixed(2));
+      return {
+        ...winner,
+        grossAmount: winner.amount,
+        charityDeduction,
+        charityPercentage,
+        charityName: userCharity?.charity?.name ?? null,
+        netAmount,
+      };
+    });
 
-    return NextResponse.json({ subscription, scores, userCharity, totalWinnings, latestDraw, winners });
+    // Total winnings = sum of net amounts (after charity deduction)
+    const totalGross = winners.reduce((sum, w) => sum + w.amount, 0);
+    const totalCharityDeduction = parseFloat(
+      ((totalGross * charityPercentage) / 100).toFixed(2)
+    );
+    const totalWinnings = parseFloat((totalGross - totalCharityDeduction).toFixed(2));
+
+    return NextResponse.json({
+      subscription,
+      scores,
+      userCharity,
+      totalWinnings,
+      totalGross,
+      totalCharityDeduction,
+      charityPercentage,
+      latestDraw,
+      winners: winnersWithBreakdown,
+    });
   } catch (error) {
     console.error('Dashboard error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
