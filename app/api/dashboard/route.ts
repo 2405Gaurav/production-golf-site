@@ -13,8 +13,31 @@ export async function GET() {
     const payload: any = await verifyToken(token);
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
-    const [subscription, scores, userCharity, winners, latestDraw] = await Promise.all([
-      prisma.subscription.findUnique({ where: { userId: payload.userId } }),
+    // Always fetch subscription first
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: payload.userId },
+    });
+
+    const isActive = subscription?.status === 'active';
+
+    // If not subscribed, return early — only send subscription so the
+    // frontend can show the upgrade UI without leaking any real data
+    if (!isActive) {
+      return NextResponse.json({
+        subscription,
+        scores: [],
+        userCharity: null,
+        totalWinnings: 0,
+        totalGross: 0,
+        totalCharityDeduction: 0,
+        charityPercentage: 0,
+        latestDraw: null,
+        winners: [],
+      });
+    }
+
+    // Subscribed — fetch everything
+    const [scores, userCharity, winners, latestDraw] = await Promise.all([
       prisma.score.findMany({
         where: { userId: payload.userId },
         orderBy: { date: 'desc' },
