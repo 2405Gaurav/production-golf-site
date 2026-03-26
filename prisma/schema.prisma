@@ -25,13 +25,14 @@ model User {
 model Subscription {
   id        String   @id @default(cuid())
   userId    String   @unique
-  plan      String   // monthly or yearly
-  status    String   @default("active") // active or inactive
+  plan      String
+  status    String   @default("active")
   startDate DateTime @default(now())
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("subscriptions")
+  razorpayPaymentId String?
+  razorpayOrderId   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Score {

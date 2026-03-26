@@ -33,16 +33,20 @@ export async function POST(request: Request) {
     // Activate subscription in DB
     const subscription = await prisma.subscription.upsert({
       where: { userId: payload.userId },
-      update: {
-        plan,
-        status: 'active',
-        startDate: new Date(),
-      },
-      create: {
-        userId: payload.userId,
-        plan,
-        status: 'active',
-      },
+    update: {
+  plan,
+  status: 'active',
+  startDate: new Date(),
+  razorpayPaymentId,
+  razorpayOrderId,
+},
+create: {
+  userId: payload.userId,
+  plan,
+  status: 'active',
+  razorpayPaymentId,
+  razorpayOrderId,
+},
     });
 
     return NextResponse.json({ success: true, subscription });
