@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ReportsAnalytics from '@/components/admin/ReportAndAnalytic';
 
 export default function AdminPage() {
   const [charities, setCharities] = useState([]);
@@ -184,6 +185,7 @@ const handlePublish = async () => {
             <TabsTrigger value="charities">Charities</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="winners">Winners & Proofs</TabsTrigger>
+            <TabsTrigger value="reports">Reports & Analytics</TabsTrigger>
           </TabsList>
 
       <TabsContent value="draws">
@@ -305,6 +307,9 @@ const handlePublish = async () => {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="reports">
+  <ReportsAnalytics />
+</TabsContent>
 
           <TabsContent value="winners">
             <Card>
