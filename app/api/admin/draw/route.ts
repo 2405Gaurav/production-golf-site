@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       select: { value: true },
     });
 
-    const numbers = generateNumbers(mode, allScores.map(s => s.value));
+    const numbers = generateNumbers(mode, allScores.map((s:any) => s.value));
 
     if (simulate) {
       return NextResponse.json({
