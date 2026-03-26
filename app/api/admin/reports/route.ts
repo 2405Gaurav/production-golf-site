@@ -40,7 +40,7 @@ export async function GET() {
     ]);
 
     // Total prize pool = sum of all winner gross amounts
-    const totalPrizePool = winners.reduce((sum, w) => sum + w.amount, 0);
+    const totalPrizePool = winners.reduce((sum: number, w: any) => sum + w.amount, 0);
 
     // Charity contributions: for each winner, apply their charity percentage
     let totalCharityContributions = 0;
